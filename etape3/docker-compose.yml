@@ -1,0 +1,42 @@
+
+services:
+  # --- Base de données MariaDB ---
+  data:
+    image: mariadb:latest
+    container_name: data
+    environment:
+      MARIADB_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - ./create.sql:/docker-entrypoint-initdb.d/create.sql
+    networks:
+      - link_start
+
+  # --- Serveur PHP-FPM ---
+  script:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: script
+    volumes:
+      - ./html:/var/www/html
+    networks:
+      - link_start
+
+  # --- Serveur Nginx ---
+  http:
+    image: nginx:latest
+    container_name: http
+    ports:
+      - "8080:80"
+    volumes:
+      - ./config/:/etc/nginx/conf.d
+      - ./html:/app                  
+    depends_on:
+      - script
+    networks:
+      - link_start
+
+# --- Réseau partagé entre tous les conteneurs ---
+networks:
+  link_start:
+    driver: bridge
